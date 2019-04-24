@@ -32,25 +32,31 @@ class Net(nn.Module):
         self.pool3 = nn.MaxPool2d(2, 2)
         self.pool4 = nn.MaxPool2d(2, 2)
 
-        self.conv1_drop = nn.Dropout2d(0.5)
-        self.conv2_drop = nn.Dropout2d(0.5)
-        self.conv3_drop = nn.Dropout2d(0.5)
-        self.conv4_drop = nn.Dropout2d(0.5)
+        # self.conv1_drop = nn.Dropout2d(0.1)
+        # self.conv2_drop = nn.Dropout2d(0.2)
+        # self.conv3_drop = nn.Dropout2d(0.3)
+        self.conv4_drop = nn.Dropout2d(0.4)
 
         self.fc1 = nn.Linear(14*14*256, 2560)
-        self.fc2 = nn.Linear(2560, 136)
+        self.fc2 = nn.Linear(2560, 1000)
+        self.fc3 = nn.Linear(1000, 136)
 
         self.fc1_drop = nn.Dropout(0.5)
+        self.fc2_drop = nn.Dropout(0.6)
+        
+        self.conv1_bn = nn.BatchNorm2d(32)
+        self.conv2_bn = nn.BatchNorm2d(64)
+        self.conv3_bn = nn.BatchNorm2d(128)
         
     def forward(self, x):
         ## TODO: Define the feedforward behavior of this model
         ## x is the input image and, as an example, here you may choose to include a pool/conv step:
-        x = self.pool1(F.relu(self.conv1(x)))
-        x = self.conv1_drop(x)
-        x = self.pool2(F.relu(self.conv2(x)))
-        x = self.conv2_drop(x)
-        x = self.pool3(F.relu(self.conv3(x)))
-        x = self.conv3_drop(x)
+        x = self.pool1(F.relu(self.conv1_bn(self.conv1(x))))
+        # x = self.conv1_drop(x)
+        x = self.pool2(F.relu(self.conv2_bn(self.conv2(x))))
+        # x = self.conv2_drop(x)
+        x = self.pool3(F.relu(self.conv3_bn(self.conv3(x))))
+        # x = self.conv3_drop(x)
         x = self.pool4(F.relu(self.conv4(x)))
         x = self.conv4_drop(x)
 
@@ -58,6 +64,22 @@ class Net(nn.Module):
         
         x = F.relu(self.fc1(x))
         x = self.fc1_drop(x)
-        x = self.fc2(x)
+        x = F.relu(self.fc2(x))
+        x = self.fc2_drop(x)
+        x = self.fc3(x)
         # a modified x, having gone through all the layers of your model, should be returned
         return x
+
+def weight_init(m):
+    '''
+    Usage:
+        model = Model()
+        model.apply(weight_init)
+    '''
+    if isinstance(m, nn.Conv2d):
+        I.xavier_normal_(m.weight.data)
+        if m.bias is not None:
+            I.normal_(m.bias.data)
+    elif isinstance(m, nn.Linear):
+        I.xavier_normal_(m.weight.data)
+        I.normal_(m.bias.data)
