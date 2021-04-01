@@ -52,6 +52,18 @@ class FacialKeypointsDataset(Dataset):
 class Normalize(object):
     """Convert a color image to grayscale and normalize the color range to [0,1]."""        
 
+    def __init__(self, kp_mean=100, kp_std=50):
+        """constructor for Normalize
+
+        :kp_mean: (float) mean for keypoint normalization
+        :kp_std: (float) standard dev for keypoint normalization
+        :returns: (NONE)
+
+        """
+        self._kp_mean = float(kp_mean)
+        self._kp_std = float(kp_std)
+        return
+
     def __call__(self, sample):
         image, key_pts = sample['image'], sample['keypoints']
         
@@ -67,7 +79,7 @@ class Normalize(object):
         
         # scale keypoints to be centered around 0 with a range of [-1, 1]
         # mean = 100, sqrt = 50, so, pts should be (pts - 100)/50
-        key_pts_copy = (key_pts_copy - 100)/50.0
+        key_pts_copy = (key_pts_copy - self._kp_mean)/self._kp_std
 
 
         return {'image': image_copy, 'keypoints': key_pts_copy}
